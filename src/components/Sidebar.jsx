@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   Lock,
   Wand2,
+  Key,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -24,6 +25,7 @@ const NAV_ITEMS = [
   { path: '/voice-studio', label: 'Voice Studio', icon: Wand2 },
   { path: '/models', label: 'Models', icon: Cpu },
   { path: '/voices', label: 'Voice Library', icon: Layers },
+  { path: '/api-keys', label: 'API Keys', icon: Key },
   { path: '/webhooks', label: 'Webhooks & CallZenza', icon: Webhook },
   { path: '/history', label: 'History', icon: History },
   { path: '/settings', label: 'Settings', icon: Settings },
@@ -38,17 +40,17 @@ export function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onCloseMobile
           <NavLink to="/" className="sidebar-brand" onClick={onCloseMobile}>
             <div className="brand-logo">
               <svg viewBox="0 0 48 48" fill="none" style={{ width: '100%', height: '100%' }}>
-                <rect width="48" height="48" rx="10" fill="#192B26" />
-                <rect x="1" y="1" width="46" height="46" rx="9" stroke="#416B58" strokeWidth="1.5" />
+                <rect width="48" height="48" rx="10" fill="#4BA69A" />
+                <rect x="1" y="1" width="46" height="46" rx="9" stroke="rgba(255, 255, 255, 0.25)" strokeWidth="1.5" />
                 <path
                   d="M10 24C10 24 14 14 18 24C22 34 26 12 30 24C34 36 38 24 38 24"
-                  stroke="#65E6A5"
+                  stroke="#FFFFFF"
                   strokeWidth="2.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 />
-                <circle cx="18" cy="24" r="3" fill="#65E6A5" />
-                <circle cx="30" cy="24" r="3" fill="#65E6A5" />
+                <circle cx="18" cy="24" r="3" fill="#FFFFFF" />
+                <circle cx="30" cy="24" r="3" fill="#FFFFFF" />
               </svg>
             </div>
             {!collapsed && (

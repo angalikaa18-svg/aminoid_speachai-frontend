@@ -18,7 +18,7 @@ export function ConfirmDialog({
       style={{
         position: 'fixed',
         inset: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.75)',
+        backgroundColor: 'rgba(23, 76, 75, 0.45)',
         backdropFilter: 'blur(4px)',
         zIndex: 10000,
         display: 'flex',
@@ -33,15 +33,17 @@ export function ConfirmDialog({
         style={{
           maxWidth: 440,
           width: '100%',
-          backgroundColor: 'var(--color-card-bg)',
-          borderColor: danger ? 'var(--color-danger)' : 'var(--color-moss-green)',
+          backgroundColor: 'var(--color-card)',
+          borderColor: danger ? 'var(--color-danger)' : 'var(--color-border)',
+          boxShadow: 'var(--shadow-hover)',
+          borderRadius: 'var(--radius-medium)',
         }}
         onClick={(e) => e.stopPropagation()}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             {danger && <AlertTriangle size={20} style={{ color: 'var(--color-danger)' }} />}
-            <h3 style={{ fontSize: 17, margin: 0 }}>{title}</h3>
+            <h3 style={{ fontSize: 17, margin: 0, color: 'var(--color-primary)' }}>{title}</h3>
           </div>
           <button
             type="button"

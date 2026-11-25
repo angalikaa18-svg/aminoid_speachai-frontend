@@ -37,19 +37,22 @@ export function ToastProvider({ children }) {
         }}
       >
         {toasts.map((toast) => {
-          let bg = 'var(--color-deep-green)';
-          let border = 'var(--color-moss-green)';
+          let border = 'var(--color-border)';
           let Icon = Info;
-          let iconColor = 'var(--color-mint-green)';
+          let iconColor = 'var(--color-info)';
 
           if (toast.type === 'success') {
-            border = 'var(--color-mint-green)';
+            border = 'rgba(46, 139, 87, 0.35)';
             Icon = CheckCircle2;
-            iconColor = 'var(--color-mint-green)';
+            iconColor = 'var(--color-success)';
           } else if (toast.type === 'error') {
-            border = 'var(--color-danger)';
+            border = 'rgba(217, 83, 79, 0.35)';
             Icon = AlertCircle;
             iconColor = 'var(--color-danger)';
+          } else if (toast.type === 'warning') {
+            border = 'rgba(217, 154, 50, 0.35)';
+            Icon = AlertCircle;
+            iconColor = 'var(--color-warning)';
           }
 
           return (
@@ -61,11 +64,11 @@ export function ToastProvider({ children }) {
                 alignItems: 'center',
                 gap: 12,
                 padding: '12px 18px',
-                backgroundColor: bg,
+                backgroundColor: 'var(--color-card)',
                 border: `1px solid ${border}`,
-                borderRadius: 'var(--radius-md)',
-                boxShadow: 'var(--shadow-lg)',
-                color: 'var(--color-mist-white)',
+                borderRadius: 'var(--radius-small)',
+                boxShadow: 'var(--shadow-hover)',
+                color: 'var(--color-text-primary)',
                 fontSize: 14,
                 fontWeight: 500,
                 minWidth: 260,

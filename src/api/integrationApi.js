@@ -12,6 +12,11 @@ export const integrationApi = {
     return res.data;
   },
 
+  async runDiagnostics(payload = {}) {
+    const res = await apiClient.post('/api/v1/integrations/diagnostics/run', payload);
+    return res.data;
+  },
+
   // 2. Connected Platforms
   async getPlatforms() {
     const res = await apiClient.get('/api/v1/integrations/platforms');
@@ -91,7 +96,17 @@ export const integrationApi = {
   },
 
   async getDeliveries(params = {}) {
-    const res = await apiClient.get('/api/v1/integrations/webhooks/deliveries', { params });
+    const cleanParams = {};
+    if (params.event_name && typeof params.event_name === 'string' && params.event_name.trim()) {
+      cleanParams.event_name = params.event_name.trim();
+    }
+    if (params.status && typeof params.status === 'string' && params.status.trim()) {
+      cleanParams.status = params.status.trim();
+    }
+    if (params.limit) {
+      cleanParams.limit = params.limit;
+    }
+    const res = await apiClient.get('/api/v1/integrations/webhooks/deliveries', { params: cleanParams });
     return res.data;
   },
 
@@ -126,6 +141,38 @@ export const integrationApi = {
       headers['X-API-Key'] = apiKey;
     }
     const res = await apiClient.post('/api/v1/integrations/tts/generate', payload, { headers });
+    return res.data;
+  },
+
+  // 6. CallZenza AI Receptionist Integration
+  async getCallZenzaStatus() {
+    const res = await apiClient.get('/api/v1/integrations/callzenza/status');
+    return res.data;
+  },
+
+  async connectCallZenza(payload) {
+    const res = await apiClient.post('/api/v1/integrations/callzenza/connect', payload);
+    return res.data;
+  },
+
+  async disconnectCallZenza() {
+    const res = await apiClient.post('/api/v1/integrations/callzenza/disconnect');
+    return res.data;
+  },
+
+  async testCallZenza(payload = {}) {
+    const res = await apiClient.post('/api/v1/integrations/callzenza/test', payload);
+    return res.data;
+  },
+
+  async simulateCallZenzaSession(payload = {}) {
+    const res = await apiClient.post('/api/v1/integrations/callzenza/session', payload);
+    return res.data;
+  },
+
+  // 7. Dynamic Event Catalog
+  async getEventCatalog() {
+    const res = await apiClient.get('/api/v1/integrations/events');
     return res.data;
   },
 

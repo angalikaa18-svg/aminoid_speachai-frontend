@@ -6,6 +6,11 @@ export const modelApi = {
     return response.data;
   },
 
+  async getModelsCatalog() {
+    const response = await apiClient.get('/api/v1/models', { timeout: 25000 });
+    return response.data;
+  },
+
   async getSTTModels() {
     const response = await apiClient.get('/api/v1/stt/models');
     return response.data;

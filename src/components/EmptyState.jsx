@@ -15,12 +15,13 @@ export function EmptyState({
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '48px 24px',
+        padding: '44px 24px',
         textAlign: 'center',
-        backgroundColor: 'rgba(12, 21, 20, 0.4)',
-        borderRadius: 'var(--radius-lg)',
-        border: '1px dashed var(--color-moss-border)',
+        backgroundColor: 'var(--color-card)',
+        borderRadius: 'var(--radius-medium)',
+        border: '1.5px dashed var(--color-border)',
         gap: 12,
+        boxShadow: 'var(--shadow-card)',
       }}
     >
       <div
@@ -28,8 +29,8 @@ export function EmptyState({
           width: 52,
           height: 52,
           borderRadius: '50%',
-          backgroundColor: 'rgba(65, 107, 88, 0.2)',
-          color: 'var(--color-mint-green)',
+          backgroundColor: 'rgba(75, 166, 154, 0.12)',
+          color: 'var(--color-primary)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -38,11 +39,11 @@ export function EmptyState({
         <Icon size={26} />
       </div>
 
-      <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--color-mist-white)' }}>
+      <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--color-primary)' }}>
         {title}
       </div>
 
-      <p style={{ fontSize: 13, maxWidth: 360, color: 'var(--color-text-secondary)', margin: 0 }}>
+      <p style={{ fontSize: 13, maxWidth: 380, color: 'var(--color-text-secondary)', margin: 0 }}>
         {description}
       </p>
 

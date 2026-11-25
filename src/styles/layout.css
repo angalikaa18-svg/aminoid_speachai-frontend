@@ -3,15 +3,15 @@
   display: flex;
   min-height: 100vh;
   width: 100%;
-  background: var(--color-body-bg);
+  background: var(--color-background);
   position: relative;
 }
 
-/* Sidebar */
+/* Sidebar: Deep Primary Brand #174C4B */
 .sidebar {
   width: 270px;
   background-color: var(--color-sidebar);
-  border-right: 1px solid var(--color-moss-border);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   flex-direction: column;
   transition: width var(--transition-normal), transform var(--transition-normal);
@@ -20,7 +20,7 @@
   position: sticky;
   top: 0;
   height: 100vh;
-  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.25);
+  box-shadow: 2px 0 16px rgba(23, 76, 75, 0.15);
 }
 
 .sidebar.collapsed {
@@ -32,7 +32,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid var(--color-moss-border);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
 }
 
 .sidebar-brand {
@@ -47,7 +47,7 @@
   width: 38px;
   height: 38px;
   flex-shrink: 0;
-  filter: drop-shadow(0 0 8px rgba(101, 230, 165, 0.3));
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.25));
 }
 
 .brand-text {
@@ -57,17 +57,17 @@
 }
 
 .brand-name {
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 800;
   letter-spacing: 0.06em;
-  color: var(--color-mist-white);
+  color: var(--color-white);
   line-height: 1.2;
 }
 
 .brand-badge {
   font-size: 10px;
   font-weight: 700;
-  color: var(--color-mint-green);
+  color: var(--color-accent);
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
@@ -75,7 +75,7 @@
 .sidebar-collapse-btn {
   background: transparent;
   border: 1px solid transparent;
-  color: var(--color-text-secondary);
+  color: rgba(255, 255, 255, 0.75);
   cursor: pointer;
   padding: 6px;
   border-radius: 6px;
@@ -86,9 +86,9 @@
 }
 
 .sidebar-collapse-btn:hover {
-  background: var(--color-moss-border);
-  color: var(--color-mint-green);
-  border-color: rgba(101, 230, 165, 0.2);
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--color-white);
+  border-color: rgba(255, 255, 255, 0.18);
 }
 
 .sidebar-nav {
@@ -96,7 +96,7 @@
   padding: 16px 12px;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
   overflow-y: auto;
 }
 
@@ -105,8 +105,8 @@
   align-items: center;
   gap: 14px;
   padding: 11px 14px;
-  border-radius: var(--radius-sm);
-  color: var(--color-text-secondary);
+  border-radius: var(--radius-small);
+  color: rgba(255, 255, 255, 0.82);
   font-size: 14px;
   font-weight: 500;
   transition: all var(--transition-fast);
@@ -116,18 +116,17 @@
 }
 
 .nav-link:hover {
-  background: rgba(65, 107, 88, 0.22);
-  color: var(--color-mist-white);
-  border-color: rgba(65, 107, 88, 0.3);
+  background: rgba(255, 255, 255, 0.10);
+  color: var(--color-white);
 }
 
-/* Soft Green Glow on Selected Sidebar Menu Item */
+/* Active Sidebar Menu: Accent #4BA69A highlight */
 .nav-link.active {
   background: var(--sidebar-active-gradient);
-  color: var(--color-mint-green);
+  color: var(--color-white);
   font-weight: 600;
-  border: 1px solid rgba(101, 230, 165, 0.25);
-  box-shadow: inset 0 0 14px rgba(101, 230, 165, 0.12), 0 2px 8px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(75, 166, 154, 0.40);
+  box-shadow: inset 0 0 14px rgba(75, 166, 154, 0.18);
 }
 
 .nav-link.active::before {
@@ -137,9 +136,13 @@
   top: 15%;
   height: 70%;
   width: 3.5px;
-  background: var(--color-mint-green);
+  background: var(--color-accent);
   border-radius: 0 4px 4px 0;
-  box-shadow: 0 0 12px var(--color-mint-green);
+  box-shadow: 0 0 8px var(--color-accent);
+}
+
+.nav-link.active .nav-link-icon {
+  color: var(--color-accent);
 }
 
 .nav-link-icon {
@@ -156,13 +159,12 @@
 .sidebar-security {
   margin: 12px;
   padding: 14px;
-  background: linear-gradient(180deg, #111E1A 0%, #0D1714 100%);
-  border: 1px solid var(--color-moss-border);
-  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: var(--radius-small);
   display: flex;
   flex-direction: column;
   gap: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .security-badge {
@@ -171,7 +173,7 @@
   gap: 8px;
   font-size: 11px;
   font-weight: 700;
-  color: var(--color-mint-green);
+  color: var(--color-accent);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -181,7 +183,7 @@
   flex-direction: column;
   gap: 4px;
   font-size: 11px;
-  color: var(--color-text-secondary);
+  color: rgba(255, 255, 255, 0.75);
 }
 
 .security-point {
@@ -194,31 +196,28 @@
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: var(--color-mint-green);
-  box-shadow: 0 0 6px rgba(101, 230, 165, 0.5);
+  background: var(--color-accent);
 }
 
-/* Main Area with Subtle Waveform-Inspired Background Decoration */
+/* Main Area */
 .main-wrapper {
   flex: 1;
   display: flex;
   flex-direction: column;
   min-width: 0;
-  background-color: var(--color-body-bg);
+  background-color: var(--color-background);
   background-image: 
-    radial-gradient(circle at 85% 8%, rgba(101, 230, 165, 0.07) 0%, transparent 45%),
-    radial-gradient(circle at 15% 92%, rgba(65, 107, 88, 0.18) 0%, transparent 55%),
-    radial-gradient(circle at 50% 50%, rgba(27, 48, 41, 0.3) 0%, transparent 70%),
-    repeating-linear-gradient(90deg, transparent, transparent 48px, rgba(101, 230, 165, 0.012) 49px, transparent 50px);
+    radial-gradient(circle at 90% 10%, rgba(75, 166, 154, 0.04) 0%, transparent 40%),
+    radial-gradient(circle at 10% 90%, rgba(232, 224, 208, 0.45) 0%, transparent 50%);
   background-attachment: fixed;
 }
 
-/* Topbar */
+/* Topbar: Clean White with Subtle Border #E8E0D0 */
 .topbar {
   height: 72px;
-  background-color: rgba(25, 43, 38, 0.88);
+  background-color: rgba(255, 255, 255, 0.96);
   backdrop-filter: var(--glass-blur);
-  border-bottom: 1px solid var(--color-moss-border);
+  border-bottom: 1px solid var(--color-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -226,6 +225,7 @@
   position: sticky;
   top: 0;
   z-index: 40;
+  box-shadow: 0 1px 3px rgba(23, 76, 75, 0.04);
 }
 
 .topbar-left {
@@ -238,7 +238,7 @@
   display: none;
   background: transparent;
   border: none;
-  color: var(--color-text-primary);
+  color: var(--color-primary);
   cursor: pointer;
   padding: 6px;
 }
@@ -251,13 +251,13 @@
 .topbar-page-title {
   font-size: 19px;
   font-weight: 700;
-  color: var(--color-mist-white);
+  color: var(--color-primary);
   line-height: 1.2;
 }
 
 .topbar-breadcrumb {
   font-size: 12px;
-  color: var(--color-text-secondary);
+  color: var(--color-text-muted);
 }
 
 .topbar-right {
@@ -266,18 +266,19 @@
   gap: 14px;
 }
 
-/* Polished Green Status Indicator with Pulsing Ring */
+/* Connection Status Indicator */
 .status-pill {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 7px 16px;
-  background: linear-gradient(180deg, #172D25 0%, #101E1A 100%);
-  border: 1px solid var(--color-moss-border);
+  background-color: var(--color-secondary-background);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-full);
   font-size: 12px;
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  color: var(--color-text-primary);
+  box-shadow: 0 1px 2px rgba(23, 76, 75, 0.04);
 }
 
 .status-dot {
@@ -288,8 +289,7 @@
 }
 
 .status-dot.connected {
-  background: var(--color-mint-green);
-  box-shadow: 0 0 8px var(--color-mint-green);
+  background: var(--color-success);
 }
 
 .status-dot.connected::after {
@@ -297,7 +297,7 @@
   position: absolute;
   inset: -3px;
   border-radius: 50%;
-  border: 1px solid rgba(101, 230, 165, 0.5);
+  border: 1px solid rgba(46, 139, 87, 0.4);
   animation: ringPulse 2.4s infinite ease-out;
 }
 
@@ -309,11 +309,9 @@
 
 .status-dot.connecting {
   background: var(--color-warning);
-  box-shadow: 0 0 8px var(--color-warning);
 }
 .status-dot.disconnected, .status-dot.error {
   background: var(--color-danger);
-  box-shadow: 0 0 8px var(--color-danger);
 }
 
 .topbar-hardware-badge {
@@ -321,8 +319,8 @@
   align-items: center;
   gap: 6px;
   padding: 6px 14px;
-  background: linear-gradient(180deg, rgba(49, 86, 71, 0.35) 0%, rgba(27, 48, 41, 0.35) 100%);
-  border: 1px solid var(--color-moss-border);
+  background-color: var(--color-card);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-full);
   font-size: 12px;
   color: var(--color-text-secondary);
@@ -331,7 +329,7 @@
 /* Page Content Container */
 .page-container {
   flex: 1;
-  padding: 30px;
+  padding: 28px 32px;
   max-width: 1440px;
   width: 100%;
   margin: 0 auto;
@@ -360,7 +358,8 @@
     display: block;
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.75);
+    background: rgba(23, 76, 75, 0.45);
+    backdrop-filter: blur(4px);
     z-index: 45;
   }
   .topbar {

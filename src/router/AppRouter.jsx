@@ -8,6 +8,7 @@ import TTSPage from '../pages/TTSPage';
 import ModelsPage from '../pages/ModelsPage';
 import VoiceLibraryPage from '../pages/VoiceLibraryPage';
 import WebhooksPage from '../pages/WebhooksPage';
+import ApiKeysPage from '../pages/ApiKeysPage';
 import HistoryPage from '../pages/HistoryPage';
 import SettingsPage from '../pages/SettingsPage';
 import AboutPage from '../pages/AboutPage';
@@ -21,6 +22,7 @@ const ROUTE_CONFIG = {
   '/voice-studio': { title: 'Qwen3 Voice Studio', subtitle: 'Voice Cloning, Voice Design & Custom Personas' },
   '/models': { title: 'Model Management', subtitle: 'Local Quantized Neural Models' },
   '/voices': { title: 'Voice Library', subtitle: 'Installed Local Acoustic Voices' },
+  '/api-keys': { title: 'API Key Management & Gateways', subtitle: 'Secure Bearer Token Integration for AI Receptionist' },
   '/webhooks': { title: 'Developer & CallZenza Integration', subtitle: 'REST Endpoints & Webhook Dispatcher' },
   '/history': { title: 'Activity History', subtitle: 'Local Transcription & Speech Audio Records' },
   '/settings': { title: 'Studio Settings', subtitle: 'API Endpoints & Inference Parameters' },
@@ -66,6 +68,7 @@ function Layout() {
             <Route path="/voice-studio/*" element={<VoiceStudioPage />} />
             <Route path="/models" element={<ModelsPage />} />
             <Route path="/voices" element={<VoiceLibraryPage />} />
+            <Route path="/api-keys" element={<ApiKeysPage />} />
             <Route path="/webhooks" element={<WebhooksPage />} />
             <Route path="/history" element={<HistoryPage />} />
             <Route path="/settings" element={<SettingsPage />} />

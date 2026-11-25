@@ -15,7 +15,7 @@ export function VoiceCard({
       case 'cloned':
         return <span className="badge badge-mint" style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Mic size={11} /> Cloned Voice</span>;
       case 'designed':
-        return <span className="badge" style={{ backgroundColor: 'rgba(240, 100, 160, 0.15)', color: '#ff85be', border: '1px solid rgba(240, 100, 160, 0.35)', display: 'flex', alignItems: 'center', gap: 4 }}><Sparkles size={11} /> Designed Voice</span>;
+        return <span className="badge" style={{ backgroundColor: 'rgba(75, 166, 154, 0.15)', color: 'var(--color-primary)', border: '1px solid var(--color-accent)', display: 'flex', alignItems: 'center', gap: 4 }}><Sparkles size={11} /> Designed Voice</span>;
       case 'custom_voice':
         return <span className="badge badge-moss" style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Users size={11} /> Custom Persona</span>;
       default:
@@ -85,7 +85,7 @@ export function VoiceCard({
       )}
 
       {/* Footer Actions */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', paddingTop: 8, borderTop: '1px solid rgba(49, 86, 71, 0.4)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', paddingTop: 10, borderTop: '1px solid var(--color-border)' }}>
         <span style={{ fontSize: 11, color: 'var(--color-text-muted)', fontFamily: 'var(--font-mono)' }}>
           {voice.createdAt ? new Date(voice.createdAt).toLocaleDateString() : 'Installed Voice'}
         </span>

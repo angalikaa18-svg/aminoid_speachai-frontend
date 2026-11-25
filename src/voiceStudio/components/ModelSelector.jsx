@@ -37,14 +37,14 @@ export function ModelSelector({ selectedModelId, onSelectModel, targetType = 'al
       </select>
 
       {activeModel && (
-        <div style={{ padding: '8px 12px', backgroundColor: 'var(--color-forest-black)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-moss-border)', fontSize: 11 }}>
+        <div style={{ padding: '10px 14px', backgroundColor: '#FAF9F5', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontSize: 12 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-            <span style={{ color: 'var(--color-mist-white)', fontWeight: 600 }}>Architecture:</span>
-            <span style={{ color: 'var(--color-text-secondary)', fontFamily: 'var(--font-mono)' }}>
+            <span style={{ color: 'var(--color-primary)', fontWeight: 600 }}>Architecture:</span>
+            <span style={{ color: 'var(--color-text-secondary)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>
               12Hz Speech Tokenizer Multi-Codebook
             </span>
           </div>
-          <div style={{ color: 'var(--color-text-muted)' }}>
+          <div style={{ color: 'var(--color-text-muted)', fontSize: 11 }}>
             Hardware: {activeModel.device} • {activeModel.status}
           </div>
         </div>

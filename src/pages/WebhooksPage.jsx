@@ -34,7 +34,12 @@ import {
   Cpu,
   Layers,
   Terminal,
-  ExternalLink
+  ExternalLink,
+  PhoneCall,
+  Eye,
+  EyeOff,
+  Sliders,
+  Sparkles
 } from 'lucide-react';
 
 import { useIntegrations } from '../hooks/useIntegrations';
@@ -62,11 +67,39 @@ export function WebhooksPage() {
     setCreatedKeyData,
     deliveryFilter,
     setDeliveryFilter,
+    diagnostics,
+    isRunningDiagnostics,
+    runDiagnostics,
+    callzenzaStatus,
+    eventCatalog,
+    isConnectingCallZenza,
+    isTestingCallZenza,
+    connectCallZenza,
+    disconnectCallZenza,
+    testCallZenza,
+    simulateCallZenzaSession,
+    refreshCallZenza,
     refreshAll,
     refreshDeliveries,
     getActiveBaseUrl,
     getSnippets
   } = useIntegrations();
+
+  // Diagnostics runner handler
+  const handleTestExternalConnection = async () => {
+    try {
+      const res = await runDiagnostics();
+      if (res.overall_status === 'PASS') {
+        addToast('All 8 integration connectivity checks passed!', 'success');
+      } else if (res.overall_status === 'WARNING') {
+        addToast('Connectivity checks completed with warnings.', 'warning');
+      } else {
+        addToast('Some connectivity checks failed. See diagnostics details.', 'error');
+      }
+    } catch (err) {
+      addToast(err.message || 'Diagnostics execution failed', 'error');
+    }
+  };
 
   // Copy helper
   const [copiedKey, setCopiedKey] = useState(null);
@@ -76,6 +109,80 @@ export function WebhooksPage() {
     addToast('Copied to clipboard!', 'success');
     setTimeout(() => setCopiedKey(null), 2000);
   };
+
+  // ---------------------------------------------------------------------------
+  // Dedicated CallZenza AI Receptionist State & Handlers
+  // ---------------------------------------------------------------------------
+  const [showCallZenzaModal, setShowCallZenzaModal] = useState(false);
+  const [showSecretKey, setShowSecretKey] = useState(false);
+  const [callzenzaForm, setCallzenzaForm] = useState({
+    destination_url: 'http://127.0.0.1:8080/webhook',
+    secret_key: '',
+    auth_token: '',
+    base_url: 'http://127.0.0.1:8080',
+    description: 'CallZenza AI Receptionist telephony speech engine webhook'
+  });
+  const [isSimulatingSession, setIsSimulatingSession] = useState(false);
+  const [sessionPrompt, setSessionPrompt] = useState('Hello, thank you for calling. AMINOID Speech Engine is active.');
+  const [sessionCaller, setSessionCaller] = useState('+1 (800) 555-0199');
+
+  const handleConnectCallZenza = async (e) => {
+    e.preventDefault();
+    if (!callzenzaForm.destination_url.trim()) {
+      addToast('Destination webhook URL is required', 'error');
+      return;
+    }
+    try {
+      await connectCallZenza(callzenzaForm);
+      addToast('CallZenza AI Receptionist connected successfully!', 'success');
+      setShowCallZenzaModal(false);
+    } catch (err) {
+      addToast(err.message || 'Failed to connect CallZenza', 'error');
+    }
+  };
+
+  const handleDisconnectCallZenza = async () => {
+    if (!window.confirm('Disconnect CallZenza AI Receptionist? Webhook events will no longer be forwarded.')) return;
+    try {
+      await disconnectCallZenza();
+      addToast('CallZenza AI Receptionist disconnected', 'success');
+    } catch (err) {
+      addToast(err.message || 'Failed to disconnect CallZenza', 'error');
+    }
+  };
+
+  const handleTestCallZenzaPing = async () => {
+    try {
+      const res = await testCallZenza();
+      if (res.status === 'success') {
+        addToast(`Signed test ping delivered to CallZenza! (HTTP ${res.http_status} in ${res.duration_ms?.toFixed(1)}ms)`, 'success');
+      } else {
+        addToast(`CallZenza delivery check: ${res.error || 'HTTP ' + res.http_status}`, 'warning');
+      }
+    } catch (err) {
+      addToast(err.message || 'Test dispatch failed', 'error');
+    }
+  };
+
+  const handleSimulateCallZenzaSession = async () => {
+    setIsSimulatingSession(true);
+    try {
+      const res = await simulateCallZenzaSession({
+        caller_number: sessionCaller,
+        initial_prompt: sessionPrompt
+      });
+      addToast(`CallZenza session '${res.session?.session_id}' started! Event dispatched to CallZenza.`, 'success');
+    } catch (err) {
+      addToast(err.message || 'Simulation failed', 'error');
+    } finally {
+      setIsSimulatingSession(false);
+    }
+  };
+
+  // Grouped events filter state in subscription modal
+  const [eventSearchTerm, setEventSearchTerm] = useState('');
+  const [eventCategoryFilter, setEventCategoryFilter] = useState('all');
+  const [deliverySearchTerm, setDeliverySearchTerm] = useState('');
 
   // ---------------------------------------------------------------------------
   // Tab 2: Connect Platform State & Handlers
@@ -500,6 +607,14 @@ export function WebhooksPage() {
         </button>
         <button
           type="button"
+          className={`tab-pill ${activeTab === 'callzenza' ? 'active' : ''}`}
+          onClick={() => setActiveTab('callzenza')}
+        >
+          <PhoneCall size={15} style={{ color: callzenzaStatus?.connected ? 'var(--color-mint-green)' : '#f59e0b' }} />
+          CallZenza AI Receptionist {callzenzaStatus?.connected ? '✓' : ''}
+        </button>
+        <button
+          type="button"
           className={`tab-pill ${activeTab === 'testing' ? 'active' : ''}`}
           onClick={() => setActiveTab('testing')}
         >
@@ -558,10 +673,10 @@ export function WebhooksPage() {
                 <Radio size={18} style={{ color: '#eab308' }} />
               </div>
               <span className="stat-value" style={{ color: '#eab308' }}>
-                {overview?.statistics?.webhook_deliveries_today ?? 0}
+                {overview?.statistics?.total_deliveries ?? overview?.statistics?.webhook_deliveries_today ?? 0}
               </span>
               <span className="stat-sub">
-                {overview?.statistics?.webhook_successful_today ?? 0} delivered / {overview?.statistics?.webhook_failed_today ?? 0} errors
+                {overview?.statistics?.successful_deliveries ?? overview?.statistics?.webhook_successful_today ?? 0} ok / {overview?.statistics?.failed_deliveries ?? overview?.statistics?.webhook_failed_today ?? 0} failed / {overview?.statistics?.pending_deliveries ?? 0} pending
               </span>
             </div>
           </div>
@@ -572,7 +687,7 @@ export function WebhooksPage() {
               Speech Engine & Model Availability
             </h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
-              <div style={{ background: '#0A1411', border: '1px solid var(--color-moss-border)', borderRadius: 'var(--radius-md)', padding: 16 }}>
+              <div style={{ background: '#FAF9F5', border: '1px solid var(--color-moss-border)', borderRadius: 'var(--radius-md)', padding: 16 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
                   <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-mint-green)', textTransform: 'uppercase' }}>
                     Speech-to-Text Model
@@ -587,7 +702,7 @@ export function WebhooksPage() {
                 </div>
               </div>
 
-              <div style={{ background: '#0A1411', border: '1px solid var(--color-moss-border)', borderRadius: 'var(--radius-md)', padding: 16 }}>
+              <div style={{ background: '#FAF9F5', border: '1px solid var(--color-moss-border)', borderRadius: 'var(--radius-md)', padding: 16 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
                   <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-mint-green)', textTransform: 'uppercase' }}>
                     Text-to-Speech Engine
@@ -602,7 +717,7 @@ export function WebhooksPage() {
                 </div>
               </div>
 
-              <div style={{ background: '#0A1411', border: '1px solid var(--color-moss-border)', borderRadius: 'var(--radius-md)', padding: 16 }}>
+              <div style={{ background: '#FAF9F5', border: '1px solid var(--color-moss-border)', borderRadius: 'var(--radius-md)', padding: 16 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
                   <span style={{ fontSize: 12, fontWeight: 700, color: '#38bdf8', textTransform: 'uppercase' }}>
                     Active Integrations
@@ -802,7 +917,7 @@ export function WebhooksPage() {
               <p style={{ margin: 0, fontSize: 13, color: '#fca5a5' }}>
                 ⚠️ Save this key now! For security reasons, the full API key is hashed with SHA-256 and will never be shown again.
               </p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#0A1411', padding: '10px 14px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-mint-green)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#FAF9F5', padding: '10px 14px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-mint-green)' }}>
                 <code style={{ fontSize: 14, fontFamily: 'var(--font-mono)', color: 'var(--color-mint-green)', flex: 1, wordBreak: 'break-all' }}>
                   {createdKeyData.api_key}
                 </code>
@@ -1010,7 +1125,18 @@ export function WebhooksPage() {
                 Real-time delivery logs, HTTP response codes, latencies, and payload inspector.
               </p>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <Search size={14} style={{ position: 'absolute', left: 10, color: 'var(--color-text-secondary)', pointerEvents: 'none' }} />
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="Search by prompt text, event name, or URL..."
+                  value={deliverySearchTerm}
+                  onChange={(e) => setDeliverySearchTerm(e.target.value)}
+                  style={{ fontSize: 12, padding: '6px 12px 6px 30px', minWidth: 280 }}
+                />
+              </div>
               <select
                 className="form-select"
                 style={{ fontSize: 12, padding: '6px 12px' }}
@@ -1038,12 +1164,19 @@ export function WebhooksPage() {
           </div>
 
           <div className="studio-card">
-            {deliveries.length === 0 ? (
+            {deliveries.filter((del) => {
+              if (!deliverySearchTerm.trim()) return true;
+              const term = deliverySearchTerm.toLowerCase();
+              const matchEvent = del.event_name?.toLowerCase().includes(term);
+              const matchUrl = del.target_url?.toLowerCase().includes(term);
+              const payloadStr = JSON.stringify(del.payload || {}).toLowerCase();
+              return matchEvent || matchUrl || payloadStr.includes(term);
+            }).length === 0 ? (
               <div style={{ textAlign: 'center', padding: '36px 16px' }}>
                 <Clock size={36} style={{ color: 'var(--color-text-secondary)', margin: '0 auto 12px' }} />
                 <h4 style={{ margin: 0, fontSize: 15, color: 'var(--color-mist-white)' }}>No Delivery Records Found</h4>
                 <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', margin: '6px 0 0' }}>
-                  When events occur or test webhooks are sent, their delivery attempts will appear here.
+                  {deliverySearchTerm ? `No webhooks matched "${deliverySearchTerm}". Try clearing your search.` : 'When events occur or test webhooks are sent, their delivery attempts will appear here.'}
                 </p>
               </div>
             ) : (
@@ -1061,7 +1194,14 @@ export function WebhooksPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {deliveries.map((del) => (
+                    {deliveries.filter((del) => {
+                      if (!deliverySearchTerm.trim()) return true;
+                      const term = deliverySearchTerm.toLowerCase();
+                      const matchEvent = del.event_name?.toLowerCase().includes(term);
+                      const matchUrl = del.target_url?.toLowerCase().includes(term);
+                      const payloadStr = JSON.stringify(del.payload || {}).toLowerCase();
+                      return matchEvent || matchUrl || payloadStr.includes(term);
+                    }).map((del) => (
                       <tr key={del.id}>
                         <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, color: 'var(--color-mint-green)' }}>
                           {del.event_name}
@@ -1121,6 +1261,355 @@ export function WebhooksPage() {
       )}
 
       {/* =====================================================================
+          TAB: CALLZENZA AI RECEPTIONIST DEDICATED HUB
+          ===================================================================== */}
+      {activeTab === 'callzenza' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {/* Hero Integration Card */}
+          <div className="callzenza-hero-card">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <PhoneCall size={28} style={{ color: 'var(--color-mint-green)' }} />
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 18, color: 'var(--color-mist-white)' }}>
+                    CallZenza AI Receptionist Telephony Integration
+                  </h3>
+                  <p style={{ margin: 0, fontSize: 13, color: 'var(--color-text-secondary)', marginTop: 2 }}>
+                    Bi-directional webhook event synchronization and speech processing engine for CallZenza AI Receptionist.
+                  </p>
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                {callzenzaStatus?.connected ? (
+                  <span className="callzenza-status-pill connected">
+                    <CheckCircle2 size={15} />
+                    Connected & Active
+                  </span>
+                ) : (
+                  <span className="callzenza-status-pill inactive">
+                    <AlertTriangle size={15} />
+                    Not Connected
+                  </span>
+                )}
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={() => {
+                    if (callzenzaStatus?.integration) {
+                      setCallzenzaForm({
+                        destination_url: callzenzaStatus.integration.webhook_url || 'http://127.0.0.1:8080/webhook',
+                        secret_key: callzenzaStatus.integration.secret_key_encrypted || '',
+                        auth_token: '',
+                        base_url: callzenzaStatus.integration.base_url || 'http://127.0.0.1:8080',
+                        description: callzenzaStatus.integration.description || 'CallZenza AI Receptionist telephony speech engine webhook'
+                      });
+                    }
+                    setShowCallZenzaModal(true);
+                  }}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                >
+                  <Sliders size={14} />
+                  {callzenzaStatus?.connected ? 'Reconfigure' : 'Connect CallZenza'}
+                </button>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={handleTestCallZenzaPing}
+                  disabled={isTestingCallZenza}
+                  title="Send authentic HMAC-SHA256 signed ping"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                >
+                  <Zap size={14} className={isTestingCallZenza ? 'animate-spin' : ''} />
+                  {isTestingCallZenza ? 'Pinging...' : 'Send Test Ping'}
+                </button>
+                {callzenzaStatus?.connected && (
+                  <button
+                    type="button"
+                    className="btn-danger"
+                    onClick={handleDisconnectCallZenza}
+                    title="Deactivate CallZenza webhook integration"
+                    style={{ padding: '6px 12px' }}
+                  >
+                    Disconnect
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Connection Parameters Details */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12, marginTop: 4 }}>
+              <div style={{ background: 'rgba(10, 20, 17, 0.7)', border: '1px solid var(--color-moss-border)', borderRadius: 'var(--radius-sm)', padding: 12 }}>
+                <span style={{ fontSize: 11, textTransform: 'uppercase', color: 'var(--color-text-secondary)', fontWeight: 600 }}>
+                  Destination Webhook URL
+                </span>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
+                  <code style={{ fontSize: 12, color: 'var(--color-mint-green)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 220 }}>
+                    {callzenzaStatus?.integration?.webhook_url || callzenzaStatus?.subscription?.target_url || 'http://127.0.0.1:8080/webhook'}
+                  </code>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    style={{ padding: '2px 6px', fontSize: 11 }}
+                    onClick={() => copyToClipboard(callzenzaStatus?.integration?.webhook_url || callzenzaStatus?.subscription?.target_url || 'http://127.0.0.1:8080/webhook', 'cz_url')}
+                  >
+                    {copiedKey === 'cz_url' ? <Check size={12} /> : <Copy size={12} />}
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ background: 'rgba(10, 20, 17, 0.7)', border: '1px solid var(--color-moss-border)', borderRadius: 'var(--radius-sm)', padding: 12 }}>
+                <span style={{ fontSize: 11, textTransform: 'uppercase', color: 'var(--color-text-secondary)', fontWeight: 600 }}>
+                  HMAC-SHA256 Signature Secret
+                </span>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
+                  <code style={{ fontSize: 12, color: 'var(--color-mist-white)' }}>
+                    {showSecretKey
+                      ? (callzenzaStatus?.subscription?.secret_key || callzenzaStatus?.integration?.secret_key_encrypted || 'whsec_cz_••••••••')
+                      : (callzenzaStatus?.subscription?.secret_key_preview || 'whsec_cz_••••••••')}
+                  </code>
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      style={{ padding: '2px 6px', fontSize: 11 }}
+                      onClick={() => setShowSecretKey(!showSecretKey)}
+                      title={showSecretKey ? 'Hide Secret' : 'Show Secret'}
+                    >
+                      {showSecretKey ? <EyeOff size={12} /> : <Eye size={12} />}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      style={{ padding: '2px 6px', fontSize: 11 }}
+                      onClick={() => copyToClipboard(callzenzaStatus?.subscription?.secret_key || callzenzaStatus?.integration?.secret_key_encrypted || 'whsec_cz_test_123', 'cz_secret')}
+                    >
+                      {copiedKey === 'cz_secret' ? <Check size={12} /> : <Copy size={12} />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ background: 'rgba(10, 20, 17, 0.7)', border: '1px solid var(--color-moss-border)', borderRadius: 'var(--radius-sm)', padding: 12 }}>
+                <span style={{ fontSize: 11, textTransform: 'uppercase', color: 'var(--color-text-secondary)', fontWeight: 600 }}>
+                  Subscribed Event Topics
+                </span>
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-mint-green)', marginTop: 4 }}>
+                  {callzenzaStatus?.subscription?.events?.length || 7} Real-Time Speech Events
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 4 CallZenza Live Metrics Cards */}
+          <div className="stats-grid">
+            <div className="stat-card">
+              <div className="stat-header">
+                <span className="stat-label">CallZenza Deliveries</span>
+                <Radio size={18} style={{ color: 'var(--color-mint-green)' }} />
+              </div>
+              <span className="stat-value">{callzenzaStatus?.statistics?.total_deliveries ?? 0}</span>
+              <span className="stat-sub">Webhook events forwarded</span>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-header">
+                <span className="stat-label">Delivery Success Rate</span>
+                <CheckCircle2 size={18} style={{ color: '#10b981' }} />
+              </div>
+              <span className="stat-value" style={{ color: '#10b981' }}>
+                {callzenzaStatus?.statistics?.success_rate ?? '100%'}
+              </span>
+              <span className="stat-sub">
+                {callzenzaStatus?.statistics?.successful_deliveries ?? 0} ok / {callzenzaStatus?.statistics?.failed_deliveries ?? 0} failed
+              </span>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-header">
+                <span className="stat-label">Successful Deliveries</span>
+                <CheckCircle2 size={18} style={{ color: '#38bdf8' }} />
+              </div>
+              <span className="stat-value" style={{ color: '#38bdf8' }}>
+                {callzenzaStatus?.statistics?.successful_deliveries ?? 0}
+              </span>
+              <span className="stat-sub">Delivered with HMAC-SHA256</span>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-header">
+                <span className="stat-label">Failed Deliveries</span>
+                <XCircle size={18} style={{ color: '#ef4444' }} />
+              </div>
+              <span className="stat-value" style={{ color: (callzenzaStatus?.statistics?.failed_deliveries ?? 0) > 0 ? '#ef4444' : 'var(--color-text-secondary)' }}>
+                {callzenzaStatus?.statistics?.failed_deliveries ?? 0}
+              </span>
+              <span className="stat-sub">Pending / Retried</span>
+            </div>
+          </div>
+
+          {/* Simulator & CallZenza Telephony Configuration */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 20 }}>
+            {/* Live Inbound Call / Session Simulator */}
+            <div className="studio-card">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                <PhoneCall size={18} style={{ color: 'var(--color-mint-green)' }} />
+                <h4 style={{ margin: 0, fontSize: 16, color: 'var(--color-mist-white)' }}>
+                  Simulate CallZenza Inbound Call Session
+                </h4>
+              </div>
+              <p style={{ margin: '0 0 14px', fontSize: 13, color: 'var(--color-text-secondary)' }}>
+                Dispatches a real <code>callzenza.session.started</code> signed webhook event to test CallZenza’s automated reception flow.
+              </p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div className="form-group">
+                  <label>Caller Phone Number / Caller ID</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={sessionCaller}
+                    onChange={(e) => setSessionCaller(e.target.value)}
+                    placeholder="+1 (800) 555-0199"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Initial Greeting / Agent Prompt</label>
+                  <textarea
+                    rows={2}
+                    className="form-textarea"
+                    value={sessionPrompt}
+                    onChange={(e) => setSessionPrompt(e.target.value)}
+                    placeholder="Hello, thank you for calling..."
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={handleSimulateCallZenzaSession}
+                  disabled={isSimulatingSession}
+                  style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 4 }}
+                >
+                  <Play size={14} className={isSimulatingSession ? 'animate-spin' : ''} />
+                  {isSimulatingSession ? 'Initiating Session...' : 'Simulate Inbound Call / Start Session'}
+                </button>
+              </div>
+            </div>
+
+            {/* Direct Configuration Endpoints for CallZenza Admin */}
+            <div className="studio-card">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                <Server size={18} style={{ color: 'var(--color-mint-green)' }} />
+                <h4 style={{ margin: 0, fontSize: 16, color: 'var(--color-mist-white)' }}>
+                  CallZenza Platform Configuration Endpoints
+                </h4>
+              </div>
+              <p style={{ margin: '0 0 14px', fontSize: 13, color: 'var(--color-text-secondary)' }}>
+                Configure these endpoints in your CallZenza AI Receptionist dashboard:
+              </p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div className="cz-endpoint-row">
+                  <div>
+                    <span style={{ fontSize: 11, color: 'var(--color-text-secondary)', display: 'block' }}>Speech-to-Text (STT)</span>
+                    <span className="cz-endpoint-url">{getActiveBaseUrl()}/api/v1/integrations/stt/transcribe</span>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    style={{ padding: '3px 8px', fontSize: 11 }}
+                    onClick={() => copyToClipboard(`${getActiveBaseUrl()}/api/v1/integrations/stt/transcribe`, 'stt_ep')}
+                  >
+                    {copiedKey === 'stt_ep' ? <Check size={12} /> : <Copy size={12} />}
+                  </button>
+                </div>
+
+                <div className="cz-endpoint-row">
+                  <div>
+                    <span style={{ fontSize: 11, color: 'var(--color-text-secondary)', display: 'block' }}>Text-to-Speech (TTS)</span>
+                    <span className="cz-endpoint-url">{getActiveBaseUrl()}/api/v1/integrations/tts/generate</span>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    style={{ padding: '3px 8px', fontSize: 11 }}
+                    onClick={() => copyToClipboard(`${getActiveBaseUrl()}/api/v1/integrations/tts/generate`, 'tts_ep')}
+                  >
+                    {copiedKey === 'tts_ep' ? <Check size={12} /> : <Copy size={12} />}
+                  </button>
+                </div>
+
+                <div className="cz-endpoint-row">
+                  <div>
+                    <span style={{ fontSize: 11, color: 'var(--color-text-secondary)', display: 'block' }}>Voice Catalog</span>
+                    <span className="cz-endpoint-url">{getActiveBaseUrl()}/api/v1/integrations/voices</span>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    style={{ padding: '3px 8px', fontSize: 11 }}
+                    onClick={() => copyToClipboard(`${getActiveBaseUrl()}/api/v1/integrations/voices`, 'v_ep')}
+                  >
+                    {copiedKey === 'v_ep' ? <Check size={12} /> : <Copy size={12} />}
+                  </button>
+                </div>
+
+                <div className="cz-endpoint-row">
+                  <div>
+                    <span style={{ fontSize: 11, color: 'var(--color-text-secondary)', display: 'block' }}>Direct Webhook Receiver (Port 8080)</span>
+                    <span className="cz-endpoint-url">{getActiveBaseUrl()}/webhook</span>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    style={{ padding: '3px 8px', fontSize: 11 }}
+                    onClick={() => copyToClipboard(`${getActiveBaseUrl()}/webhook`, 'wh_ep')}
+                  >
+                    {copiedKey === 'wh_ep' ? <Check size={12} /> : <Copy size={12} />}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Webhook Verification Code Snippet for CallZenza */}
+          <div className="studio-card">
+            <h4 style={{ margin: '0 0 8px', fontSize: 15, color: 'var(--color-mist-white)' }}>
+              CallZenza HMAC-SHA256 Signature Verification Guide
+            </h4>
+            <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--color-text-secondary)' }}>
+              Every webhook sent by AMINOID includes <code>X-Aminoid-Signature: sha256=&lt;hash&gt;</code>, <code>X-Aminoid-Event</code>, and <code>X-Aminoid-Timestamp</code>. Verify incoming requests using this snippet:
+            </p>
+            <div className="code-block-container">
+              <pre className="code-content" style={{ maxHeight: 200, fontSize: 12 }}>
+{`// Node.js / Express Webhook Signature Verification for CallZenza
+const crypto = require('crypto');
+
+app.post('/api/webhooks/aminoid', express.raw({ type: 'application/json' }), (req, res) => {
+  const signature = req.headers['x-aminoid-signature'];
+  const secret = process.env.AMINOID_WEBHOOK_SECRET;
+
+  const expectedSig = 'sha256=' + crypto
+    .createHmac('sha256', secret)
+    .update(req.body)
+    .digest('hex');
+
+  if (crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSig))) {
+    const event = JSON.parse(req.body);
+    console.log('Received valid AMINOID event:', event.event, event.data);
+    res.status(200).json({ received: true });
+  } else {
+    res.status(401).send('Invalid signature');
+  }
+});`}
+              </pre>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================================
           TAB 6: LIVE TESTING & DYNAMIC CODE GENERATOR
           ===================================================================== */}
       {activeTab === 'testing' && (
@@ -1153,7 +1642,7 @@ export function WebhooksPage() {
             </div>
 
             {urlMode === 'custom' && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10, background: '#0A1411', padding: 12, borderRadius: 'var(--radius-sm)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10, background: '#FAF9F5', padding: 12, borderRadius: 'var(--radius-sm)' }}>
                 <Globe size={16} style={{ color: 'var(--color-mint-green)' }} />
                 <input
                   type="text"
@@ -1207,7 +1696,7 @@ export function WebhooksPage() {
               </form>
 
               {sttTestResult && (
-                <div style={{ marginTop: 14, background: '#0A1411', padding: 12, borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-moss-border)' }}>
+                <div style={{ marginTop: 14, background: '#FAF9F5', padding: 12, borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-moss-border)' }}>
                   {sttTestResult.error ? (
                     <div style={{ color: '#ef4444', fontSize: 13 }}>❌ {sttTestResult.error}</div>
                   ) : (
@@ -1264,7 +1753,7 @@ export function WebhooksPage() {
               </form>
 
               {ttsTestResult && (
-                <div style={{ marginTop: 14, background: '#0A1411', padding: 12, borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-moss-border)' }}>
+                <div style={{ marginTop: 14, background: '#FAF9F5', padding: 12, borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-moss-border)' }}>
                   {ttsTestResult.error ? (
                     <div style={{ color: '#ef4444', fontSize: 13 }}>❌ {ttsTestResult.error}</div>
                   ) : (
@@ -1313,7 +1802,7 @@ export function WebhooksPage() {
               </form>
 
               {webhookTestResult && (
-                <div style={{ marginTop: 14, background: '#0A1411', padding: 12, borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-moss-border)' }}>
+                <div style={{ marginTop: 14, background: '#FAF9F5', padding: 12, borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-moss-border)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, marginBottom: 4 }}>
                     {webhookTestResult.success ? (
                       <span className="badge-success">HTTP {webhookTestResult.http_status} Success</span>
@@ -1715,36 +2204,119 @@ export function WebhooksPage() {
               </div>
 
               <div className="form-group">
-                <label>Select Subscribed Events *</label>
-                <div className="events-picker">
-                  {[
-                    'stt.completed',
-                    'stt.failed',
-                    'tts.completed',
-                    'tts.failed',
-                    'audio.generated',
-                    'model.status_changed',
-                    'integration.connected',
-                    'callzenza.session.started',
-                    '*'
-                  ].map((evtId) => {
-                    const isSel = webhookForm.events.includes(evtId);
-                    return (
-                      <span
-                        key={evtId}
-                        className={`event-chip ${isSel ? 'selected' : ''}`}
-                        onClick={() => {
-                          const newEvents = isSel
-                            ? webhookForm.events.filter((x) => x !== evtId)
-                            : [...webhookForm.events, evtId];
-                          setWebhookForm({ ...webhookForm, events: newEvents });
-                        }}
-                      >
-                        {isSel ? '✓ ' : '+ '}
-                        {evtId === '*' ? 'All Events (*)' : evtId}
-                      </span>
-                    );
-                  })}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <label style={{ margin: 0 }}>Select Subscribed Events * ({webhookForm.events.length} selected)</label>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      style={{ padding: '2px 8px', fontSize: 11 }}
+                      onClick={() => {
+                        const allIds = (eventCatalog?.events || []).map(e => e.id);
+                        setWebhookForm({ ...webhookForm, events: allIds.length > 0 ? allIds : ['*'] });
+                      }}
+                    >
+                      Select All
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      style={{ padding: '2px 8px', fontSize: 11 }}
+                      onClick={() => setWebhookForm({ ...webhookForm, events: [] })}
+                    >
+                      Deselect All
+                    </button>
+                  </div>
+                </div>
+
+                {/* Event Category Filter & Search */}
+                <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="Search events (e.g. stt, tts, callzenza, clone)..."
+                    value={eventSearchTerm}
+                    onChange={(e) => setEventSearchTerm(e.target.value)}
+                    style={{ fontSize: 12, padding: '4px 10px', flex: 1 }}
+                  />
+                  <select
+                    className="form-select"
+                    value={eventCategoryFilter}
+                    onChange={(e) => setEventCategoryFilter(e.target.value)}
+                    style={{ fontSize: 12, padding: '4px 8px' }}
+                  >
+                    <option value="all">All Categories</option>
+                    {(eventCatalog?.categories || []).map(c => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Grouped Category Box */}
+                <div style={{ maxHeight: 260, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10, paddingRight: 4 }}>
+                  {(eventCatalog?.categories || [
+                    { id: 'stt', name: 'Speech-to-Text (STT)' },
+                    { id: 'tts', name: 'Text-to-Speech (TTS)' },
+                    { id: 'clone', name: 'Voice Cloning' },
+                    { id: 'design', name: 'Voice Design' },
+                    { id: 'library', name: 'Voice Library' },
+                    { id: 'models', name: 'Model Management' },
+                    { id: 'callzenza', name: 'CallZenza & Platform' }
+                  ])
+                    .filter(cat => eventCategoryFilter === 'all' || eventCategoryFilter === cat.id)
+                    .map(cat => {
+                      const categoryEvents = (eventCatalog?.events || []).filter(e => {
+                        const matchCat = e.category === cat.id;
+                        const matchSearch = !eventSearchTerm.trim() ||
+                          e.id.toLowerCase().includes(eventSearchTerm.toLowerCase()) ||
+                          e.label.toLowerCase().includes(eventSearchTerm.toLowerCase()) ||
+                          e.description.toLowerCase().includes(eventSearchTerm.toLowerCase());
+                        return matchCat && matchSearch;
+                      });
+
+                      if (categoryEvents.length === 0) return null;
+
+                      return (
+                        <div key={cat.id} className="event-category-box">
+                          <div className="event-category-title">
+                            <span>{cat.name}</span>
+                            <span style={{ fontSize: 11, color: 'var(--color-mint-green)' }}>
+                              {categoryEvents.filter(e => webhookForm.events.includes(e.id)).length}/{categoryEvents.length}
+                            </span>
+                          </div>
+                          <div className="event-category-items">
+                            {categoryEvents.map(evt => {
+                              const isChecked = webhookForm.events.includes(evt.id) || webhookForm.events.includes('*');
+                              return (
+                                <label key={evt.id} className="event-checkbox-label">
+                                  <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    onChange={(e) => {
+                                      let updated;
+                                      if (e.target.checked) {
+                                        updated = [...webhookForm.events.filter(x => x !== '*'), evt.id];
+                                      } else {
+                                        updated = webhookForm.events.filter(x => x !== evt.id && x !== '*');
+                                      }
+                                      setWebhookForm({ ...webhookForm, events: updated });
+                                    }}
+                                  />
+                                  <div>
+                                    <div style={{ fontWeight: 600, color: isChecked ? 'var(--color-mist-white)' : 'var(--color-text-secondary)' }}>
+                                      {evt.label}
+                                    </div>
+                                    <div style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--color-mint-green)' }}>
+                                      {evt.id}
+                                    </div>
+                                  </div>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
                 </div>
               </div>
 
@@ -1816,7 +2388,7 @@ export function WebhooksPage() {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, background: '#0A1411', padding: 10, borderRadius: 'var(--radius-sm)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, background: '#FAF9F5', padding: 10, borderRadius: 'var(--radius-sm)' }}>
                 <span>Event: <strong style={{ color: 'var(--color-mint-green)' }}>{inspectDelivery.event_name}</strong></span>
                 <span>Status: <strong>{inspectDelivery.status} (HTTP {inspectDelivery.http_status || 'N/A'})</strong></span>
               </div>
@@ -1824,6 +2396,24 @@ export function WebhooksPage() {
               <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', wordBreak: 'break-all' }}>
                 Destination: <code style={{ color: 'var(--color-mist-white)' }}>{inspectDelivery.target_url}</code>
               </div>
+
+              {inspectDelivery.request_headers && Object.keys(inspectDelivery.request_headers).length > 0 && (
+                <div className="form-group">
+                  <label>HTTP Request Headers (HMAC Signature & Metadata)</label>
+                  <div style={{ background: '#FAF9F5', border: '1px solid var(--color-moss-border)', borderRadius: 'var(--radius-sm)', padding: 8, maxHeight: 150, overflowY: 'auto' }}>
+                    <table className="headers-inspect-table">
+                      <tbody>
+                        {Object.entries(inspectDelivery.request_headers).map(([k, v]) => (
+                          <tr key={k}>
+                            <td className="header-key">{k}</td>
+                            <td className="header-val">{String(v)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
 
               <div className="form-group">
                 <label>Dispatched Payload (JSON)</label>
@@ -1873,6 +2463,107 @@ export function WebhooksPage() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================================
+          MODAL: CONNECT CALLZENZA AI RECEPTIONIST
+          ===================================================================== */}
+      {showCallZenzaModal && (
+        <div className="modal-overlay" onClick={() => setShowCallZenzaModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-title">
+                <PhoneCall size={20} style={{ color: 'var(--color-mint-green)' }} />
+                <span>Configure CallZenza AI Receptionist Connection</span>
+              </div>
+              <button
+                type="button"
+                className="btn-secondary"
+                style={{ padding: '4px 8px' }}
+                onClick={() => setShowCallZenzaModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleConnectCallZenza} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div className="form-group">
+                <label>CallZenza Destination Webhook URL *</label>
+                <input
+                  type="url"
+                  className="form-input"
+                  placeholder="http://localhost:9000/webhook or https://callzenza.domain.com/webhooks/aminoid"
+                  value={callzenzaForm.destination_url}
+                  onChange={(e) => setCallzenzaForm({ ...callzenzaForm, destination_url: e.target.value })}
+                  required
+                />
+                <span style={{ fontSize: 11, color: 'var(--color-text-secondary)', marginTop: 4 }}>
+                  Destination endpoint where AMINOID will dispatch HMAC-signed speech and call events.
+                </span>
+              </div>
+
+              <div className="form-group">
+                <label>Shared Secret Key (HMAC-SHA256, leave blank to auto-generate)</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="whsec_cz_... or enter existing CallZenza webhook secret"
+                  value={callzenzaForm.secret_key}
+                  onChange={(e) => setCallzenzaForm({ ...callzenzaForm, secret_key: e.target.value })}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>CallZenza Auth Token (Optional Bearer token for outbound requests)</label>
+                <input
+                  type="password"
+                  className="form-input"
+                  placeholder="cz_token_... (optional)"
+                  value={callzenzaForm.auth_token}
+                  onChange={(e) => setCallzenzaForm({ ...callzenzaForm, auth_token: e.target.value })}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>CallZenza Platform Base URL</label>
+                <input
+                  type="url"
+                  className="form-input"
+                  placeholder="http://127.0.0.1:8080 or CallZenza server URL"
+                  value={callzenzaForm.base_url}
+                  onChange={(e) => setCallzenzaForm({ ...callzenzaForm, base_url: e.target.value })}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Description / Notes</label>
+                <textarea
+                  rows={2}
+                  className="form-textarea"
+                  value={callzenzaForm.description}
+                  onChange={(e) => setCallzenzaForm({ ...callzenzaForm, description: e.target.value })}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 10 }}>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => setShowCallZenzaModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn-primary"
+                  disabled={isConnectingCallZenza}
+                >
+                  {isConnectingCallZenza ? 'Connecting...' : 'Save & Connect CallZenza'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

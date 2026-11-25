@@ -17,6 +17,8 @@ export function useIntegrations() {
   const [webhooks, setWebhooks] = useState([]);
   const [deliveries, setDeliveries] = useState([]);
   const [voices, setVoices] = useState([]);
+  const [callzenzaStatus, setCallzenzaStatus] = useState(null);
+  const [eventCatalog, setEventCatalog] = useState({ categories: [], events: [] });
 
   // Selected base URL mode for code generator: 'localhost' | 'lan' | 'custom'
   const [urlMode, setUrlMode] = useState('localhost');
@@ -28,18 +30,39 @@ export function useIntegrations() {
   // Delivery filter state
   const [deliveryFilter, setDeliveryFilter] = useState({ event_name: '', status: '' });
 
+  // Diagnostics test runner state
+  const [diagnostics, setDiagnostics] = useState(null);
+  const [isRunningDiagnostics, setIsRunningDiagnostics] = useState(false);
+
+  // CallZenza operations state
+  const [isConnectingCallZenza, setIsConnectingCallZenza] = useState(false);
+  const [isTestingCallZenza, setIsTestingCallZenza] = useState(false);
+
+  const runDiagnostics = useCallback(async (payload = {}) => {
+    setIsRunningDiagnostics(true);
+    try {
+      const res = await integrationApi.runDiagnostics(payload);
+      setDiagnostics(res);
+      return res;
+    } finally {
+      setIsRunningDiagnostics(false);
+    }
+  }, []);
+
   // Load all initial data
   const loadData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const [ovRes, platRes, keysRes, whRes, delivRes, vRes] = await Promise.allSettled([
+      const [ovRes, platRes, keysRes, whRes, delivRes, vRes, czRes, catRes] = await Promise.allSettled([
         integrationApi.getOverview(),
         integrationApi.getPlatforms(),
         integrationApi.getApiKeys(),
         integrationApi.getWebhookSubscriptions(),
         integrationApi.getDeliveries(deliveryFilter),
-        integrationApi.getVoices()
+        integrationApi.getVoices(),
+        integrationApi.getCallZenzaStatus(),
+        integrationApi.getEventCatalog()
       ]);
 
       if (ovRes.status === 'fulfilled') setOverview(ovRes.value);
@@ -48,6 +71,8 @@ export function useIntegrations() {
       if (whRes.status === 'fulfilled') setWebhooks(whRes.value?.subscriptions || []);
       if (delivRes.status === 'fulfilled') setDeliveries(delivRes.value?.deliveries || []);
       if (vRes.status === 'fulfilled') setVoices(vRes.value?.voices || []);
+      if (czRes.status === 'fulfilled') setCallzenzaStatus(czRes.value);
+      if (catRes.status === 'fulfilled') setEventCatalog(catRes.value || { categories: [], events: [] });
 
       if (ovRes.status === 'rejected') {
         setError(ovRes.reason?.message || 'Failed to connect to integration backend.');
@@ -62,6 +87,60 @@ export function useIntegrations() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Refresh CallZenza status specifically
+  const refreshCallZenza = async () => {
+    try {
+      const res = await integrationApi.getCallZenzaStatus();
+      setCallzenzaStatus(res);
+      return res;
+    } catch (err) {
+      console.error('Failed to refresh CallZenza status:', err);
+    }
+  };
+
+  const connectCallZenza = async (payload) => {
+    setIsConnectingCallZenza(true);
+    try {
+      const res = await integrationApi.connectCallZenza(payload);
+      await loadData();
+      return res;
+    } finally {
+      setIsConnectingCallZenza(false);
+    }
+  };
+
+  const disconnectCallZenza = async () => {
+    setIsConnectingCallZenza(true);
+    try {
+      const res = await integrationApi.disconnectCallZenza();
+      await loadData();
+      return res;
+    } finally {
+      setIsConnectingCallZenza(false);
+    }
+  };
+
+  const testCallZenza = async (payload = {}) => {
+    setIsTestingCallZenza(true);
+    try {
+      const res = await integrationApi.testCallZenza(payload);
+      await refreshDeliveries(deliveryFilter);
+      return res;
+    } finally {
+      setIsTestingCallZenza(false);
+    }
+  };
+
+  const simulateCallZenzaSession = async (payload = {}) => {
+    try {
+      const res = await integrationApi.simulateCallZenzaSession(payload);
+      await refreshDeliveries(deliveryFilter);
+      return res;
+    } catch (err) {
+      throw err;
+    }
+  };
 
   // Refresh deliveries specifically when filter changes
   const refreshDeliveries = async (filters = {}) => {
@@ -249,6 +328,18 @@ curl -X POST "${baseUrl}/api/v1/integrations/webhooks/test" \\
     setCreatedKeyData,
     deliveryFilter,
     setDeliveryFilter,
+    diagnostics,
+    isRunningDiagnostics,
+    runDiagnostics,
+    callzenzaStatus,
+    eventCatalog,
+    isConnectingCallZenza,
+    isTestingCallZenza,
+    connectCallZenza,
+    disconnectCallZenza,
+    testCallZenza,
+    simulateCallZenzaSession,
+    refreshCallZenza,
     refreshAll: loadData,
     refreshDeliveries,
     getActiveBaseUrl,

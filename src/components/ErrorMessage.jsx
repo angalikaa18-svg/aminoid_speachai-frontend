@@ -13,9 +13,9 @@ export function ErrorMessage({ message, onDismiss, onRetry }) {
         gap: 12,
         padding: '12px 16px',
         backgroundColor: 'var(--color-danger-bg)',
-        border: '1px solid rgba(224, 108, 117, 0.4)',
-        borderRadius: 'var(--radius-sm)',
-        color: '#ffb3ba',
+        border: '1px solid rgba(217, 83, 79, 0.35)',
+        borderRadius: 'var(--radius-small)',
+        color: '#a82a27',
         fontSize: 13,
         lineHeight: 1.5,
       }}

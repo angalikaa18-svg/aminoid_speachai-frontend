@@ -109,12 +109,12 @@ export function FileUpload({
               style={{
                 width: 40,
                 height: 40,
-                borderRadius: 8,
-                background: 'rgba(101, 230, 165, 0.1)',
+                borderRadius: 'var(--radius-small)',
+                background: 'rgba(75, 166, 154, 0.12)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: 'var(--color-mint-green)',
+                color: 'var(--color-primary)',
               }}
             >
               <Music size={20} />

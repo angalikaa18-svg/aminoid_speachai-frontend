@@ -11,6 +11,11 @@ import {
   Check,
   Clock,
   ExternalLink,
+  HardDrive,
+  Zap,
+  ShieldCheck,
+  Radio,
+  RefreshCw,
 } from 'lucide-react';
 import StatCard from '../components/StatCard';
 import FileUpload from '../components/FileUpload';
@@ -23,6 +28,7 @@ import { useHealth } from '../hooks/useHealth';
 import { useSTT } from '../hooks/useSTT';
 import { useTTS } from '../hooks/useTTS';
 import historyApi from '../api/historyApi';
+import systemApi from '../api/systemApi';
 import { formatTimestamp } from '../utils/formatDuration';
 
 export function Dashboard() {
@@ -31,9 +37,30 @@ export function Dashboard() {
   const stt = useSTT();
   const tts = useTTS();
 
+  const [metrics, setMetrics] = useState(null);
+  const [stats, setStats] = useState(null);
   const [recentStt, setRecentStt] = useState([]);
   const [recentTts, setRecentTts] = useState([]);
   const [copiedStt, setCopiedStt] = useState(false);
+  const [refreshingTelemetry, setRefreshingTelemetry] = useState(false);
+
+  // Fetch real system telemetry & stats from backend
+  const fetchTelemetry = async () => {
+    try {
+      const [m, s] = await Promise.all([
+        systemApi.getMetrics().catch(() => null),
+        systemApi.getStats().catch(() => null),
+      ]);
+      if (m) setMetrics(m);
+      if (s) setStats(s);
+    } catch (_) {}
+  };
+
+  useEffect(() => {
+    fetchTelemetry();
+    const timer = setInterval(fetchTelemetry, 6000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Load actual recent activity from real backend history
   useEffect(() => {
@@ -46,6 +73,12 @@ export function Dashboard() {
     }).catch(() => {});
   }, [stt.result, tts.result]);
 
+  const handleManualRefresh = async () => {
+    setRefreshingTelemetry(true);
+    await fetchTelemetry();
+    setTimeout(() => setRefreshingTelemetry(false), 500);
+  };
+
   const handleCopyTranscript = async () => {
     const ok = await stt.copyTranscript();
     if (ok) {
@@ -55,56 +88,75 @@ export function Dashboard() {
     }
   };
 
-  // Derive dynamic stat values from real backend responses (never hardcoded)
-  const sttEngineName = healthData?.stt?.loaded
-    ? `${healthData?.stt?.model_name} (${healthData?.stt?.device})`
-    : 'Faster-Whisper (CTranslate2)';
-  const ttsEngineName = healthData?.tts?.engine === 'sapi5_local'
-    ? 'Local SAPI5 / Piper'
-    : healthData?.tts?.engine || 'Local TTS Engine';
-  const activeSttModel = modelStatus?.stt?.model_name !== 'none'
-    ? modelStatus?.stt?.model_name
-    : 'faster-whisper-tiny';
-  const activeTtsVoices = healthData?.tts?.voices_available !== undefined
-    ? `${healthData.tts.voices_available} Voices Ready`
-    : 'Voices Loaded';
-  const backendMode = healthData?.mode || (healthStatus === 'connected' ? '100% Offline' : 'Disconnected');
+  // Derive dynamic hardware and engine values from real backend responses
+  const cpuVal = metrics?.cpu?.percent !== undefined
+    ? `${metrics.cpu.percent}%`
+    : 'Local CPU';
+  const cpuSub = metrics?.cpu?.cores
+    ? `${metrics.cpu.cores} Physical/Logical Cores`
+    : 'CTranslate2 Execution';
+
+  const ramVal = metrics?.memory?.used_gb !== undefined
+    ? `${metrics.memory.used_gb} / ${metrics.memory.total_gb} GB`
+    : 'In-Memory';
+  const ramSub = metrics?.memory?.percent !== undefined
+    ? `RAM Load: ${metrics.memory.percent}%`
+    : 'System Memory';
+
+  const diskVal = metrics?.disk?.used_gb !== undefined
+    ? `${metrics.disk.used_gb} / ${metrics.disk.total_gb} GB`
+    : 'Local Disk';
+  const diskSub = metrics?.disk?.percent !== undefined
+    ? `Storage Load: ${metrics.disk.percent}%`
+    : 'Offline Storage';
+
+  const totalTasksVal = stats?.total_audio_tasks !== undefined
+    ? `${stats.total_audio_tasks} Tasks`
+    : `${(recentStt.length + recentTts.length)} Tasks`;
+  const totalTasksSub = stats
+    ? `${stats.stt_tasks} STT • ${stats.tts_tasks} TTS`
+    : 'Audio Processing History';
+
+  const backendStatusVal = healthStatus === 'connected' ? 'Healthy (127.0.0.1:8080)' : 'Disconnected';
+  const backendModeSub = healthData?.mode || '100% Offline Air-Gapped';
 
   return (
     <div className="dashboard-grid">
-      {/* Top Metric Cards Row */}
+      {/* Top Metric Cards Row: 100% Real Backend Hardware & Telemetry */}
       <div className="stats-row">
         <StatCard
-          title="STT Engine"
-          value={sttEngineName}
-          sub="Offline Speech Recognition"
-          icon={Mic}
-          badge="Neural STT"
-        />
-        <StatCard
-          title="TTS Engine"
-          value={ttsEngineName}
-          sub="Offline Neural Voice"
-          icon={Volume2}
-          badge="Local Synth"
-        />
-        <StatCard
-          title="Active STT Model"
-          value={activeSttModel}
-          sub="Device: CPU (int8)"
+          title="CPU Utilization"
+          value={cpuVal}
+          sub={cpuSub}
           icon={Cpu}
+          badge={metrics?.cpu ? `${metrics.cpu.percent}%` : 'Hardware'}
         />
         <StatCard
-          title="Active TTS Voices"
-          value={activeTtsVoices}
-          sub="Offline Windows SAPI5"
-          icon={Layers}
-        />
-        <StatCard
-          title="Backend Status"
-          value={healthStatus === 'connected' ? 'Healthy' : healthStatus}
-          sub={backendMode}
+          title="Memory (RAM)"
+          value={ramVal}
+          sub={ramSub}
           icon={Activity}
+          badge={metrics?.memory ? `${metrics.memory.percent}%` : 'Memory'}
+        />
+        <StatCard
+          title="Disk Storage"
+          value={diskVal}
+          sub={diskSub}
+          icon={HardDrive}
+          badge="Local SSD/HDD"
+        />
+        <StatCard
+          title="Audio Engine Workload"
+          value={totalTasksVal}
+          sub={totalTasksSub}
+          icon={Zap}
+          badge={`${stats?.custom_profiles || 0} Voices`}
+        />
+        <StatCard
+          title="Air-Gapped Status"
+          value={backendStatusVal}
+          sub={backendModeSub}
+          icon={ShieldCheck}
           badge={healthStatus === 'connected' ? 'Verified' : 'Offline'}
         />
       </div>
@@ -116,9 +168,11 @@ export function Dashboard() {
           <div className="studio-card-header">
             <div className="studio-card-title">
               <Mic size={20} style={{ color: 'var(--color-mint-green)' }} />
-              <span>Speech-to-Text</span>
+              <span>Speech-to-Text (STT)</span>
             </div>
-            <span className="badge badge-mint">Local Neural STT</span>
+            <span className="badge badge-mint">
+              {healthData?.stt?.model_name || 'Faster-Whisper Tiny'}
+            </span>
           </div>
 
           {/* File Upload / Mic Recording */}
@@ -271,9 +325,11 @@ export function Dashboard() {
           <div className="studio-card-header">
             <div className="studio-card-title">
               <Volume2 size={20} style={{ color: 'var(--color-mint-green)' }} />
-              <span>Text-to-Speech</span>
+              <span>Text-to-Speech (TTS)</span>
             </div>
-            <span className="badge badge-mint">Local Synthesis</span>
+            <span className="badge badge-mint">
+              {healthData?.tts?.engine === 'sapi5_local' ? 'Local SAPI5 / Piper' : 'Local Speech Synth'}
+            </span>
           </div>
 
           {/* Text Editor */}
@@ -314,7 +370,7 @@ export function Dashboard() {
                 ) : (
                   tts.voices.map((v) => (
                     <option key={v.id} value={v.id}>
-                      {v.name} ({v.language}, {v.gender})
+                      {v.name} ({v.language || 'en'}, {v.gender || 'neutral'})
                     </option>
                   ))
                 )}
@@ -388,12 +444,24 @@ export function Dashboard() {
         <div className="studio-card-header">
           <div className="studio-card-title">
             <Clock size={18} style={{ color: 'var(--color-mint-green)' }} />
-            <span>Recent Activity (Real Local Backend Records)</span>
+            <span>Live Activity Stream (Real Database Records)</span>
           </div>
-          <NavLink to="/history" className="btn btn-ghost btn-sm">
-            <span>View All History</span>
-            <ExternalLink size={14} />
-          </NavLink>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              onClick={handleManualRefresh}
+              disabled={refreshingTelemetry}
+              title="Refresh Telemetry"
+            >
+              <RefreshCw size={14} className={refreshingTelemetry ? 'spin' : ''} />
+              <span>Refresh</span>
+            </button>
+            <NavLink to="/history" className="btn btn-ghost btn-sm">
+              <span>View All History</span>
+              <ExternalLink size={14} />
+            </NavLink>
+          </div>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>
@@ -405,13 +473,13 @@ export function Dashboard() {
             {recentStt.length === 0 ? (
               <EmptyState
                 title="No STT History"
-                description="Upload an audio file above to transcribe and create history."
+                description="Upload or record an audio file above to transcribe and create history."
               />
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {recentStt.map((item, idx) => (
                   <div
-                    key={idx}
+                    key={item.id || idx}
                     style={{
                       padding: '10px 14px',
                       backgroundColor: 'var(--color-forest-black)',
@@ -452,7 +520,7 @@ export function Dashboard() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {recentTts.map((item, idx) => (
                   <div
-                    key={idx}
+                    key={item.id || idx}
                     style={{
                       padding: '10px 14px',
                       backgroundColor: 'var(--color-forest-black)',

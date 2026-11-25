@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Settings,
   Server,
@@ -9,21 +9,51 @@ import {
   Wifi,
   Sliders,
   Database,
+  Save,
+  Radio,
+  RefreshCw,
 } from 'lucide-react';
 import { getApiBaseUrl } from '../api/apiClient';
 import healthApi from '../api/healthApi';
+import settingsApi from '../api/settingsApi';
 import { useToast } from '../components/Toast';
+import LoadingState from '../components/LoadingState';
 
 export function SettingsPage() {
   const { addToast } = useToast();
-  const [apiUrl, setApiUrl] = useState(getApiBaseUrl());
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [testingConnection, setTestingConnection] = useState(false);
   const [testResult, setTestResult] = useState(null);
 
-  // Studio preferences stored locally
-  const [defaultLang, setDefaultLang] = useState('auto');
-  const [defaultVad, setDefaultVad] = useState(true);
-  const [defaultRate, setDefaultRate] = useState(175);
+  // Settings State mapped to storage/settings.json
+  const [settings, setSettings] = useState({
+    api_base_url: getApiBaseUrl(),
+    default_stt_language: 'auto',
+    default_vad_filter: true,
+    default_tts_rate: 175,
+    default_tts_volume: 1.0,
+    default_tts_pitch: 50,
+    offline_strict_mode: true,
+    auto_webhook_dispatch: true,
+    max_history_items: 100,
+  });
+
+  // Load real settings from backend on mount
+  useEffect(() => {
+    settingsApi.getSettings()
+      .then((data) => {
+        if (data && typeof data === 'object') {
+          setSettings((prev) => ({ ...prev, ...data }));
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleChange = (key, value) => {
+    setSettings((prev) => ({ ...prev, [key]: value }));
+  };
 
   const testConnection = async () => {
     setTestingConnection(true);
@@ -49,9 +79,36 @@ export function SettingsPage() {
     }
   };
 
-  const savePreferences = () => {
-    addToast('Studio preferences updated successfully!', 'success');
+  const handleSaveSettings = async () => {
+    setSaving(true);
+    try {
+      const res = await settingsApi.saveSettings(settings);
+      if (res && res.settings) {
+        setSettings(res.settings);
+      }
+      addToast('Studio preferences saved persistently to local database!', 'success');
+    } catch (err) {
+      addToast(err.message || 'Failed to persist settings.', 'error');
+    } finally {
+      setSaving(false);
+    }
   };
+
+  const handleResetDefaults = async () => {
+    try {
+      const res = await settingsApi.resetSettings();
+      if (res && res.settings) {
+        setSettings(res.settings);
+      }
+      addToast('Settings reset to default values.', 'info');
+    } catch (err) {
+      addToast(err.message || 'Failed to reset settings.', 'error');
+    }
+  };
+
+  if (loading) {
+    return <LoadingState message="Loading studio preferences from backend..." />;
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -60,12 +117,13 @@ export function SettingsPage() {
         <div className="studio-card-header">
           <div className="studio-card-title">
             <Settings size={22} style={{ color: 'var(--color-mint-green)' }} />
-            <span>Studio Engine Settings</span>
+            <span>Studio Engine Settings & Preferences</span>
           </div>
-          <span className="badge badge-mint">Local Configuration</span>
+          <span className="badge badge-mint">Persistent (storage/settings.json)</span>
         </div>
         <p style={{ margin: 0, fontSize: 14 }}>
-          Manage backend server connections, default inference parameters, and offline audio processing preferences.
+          Manage your local speech engine parameters, defaults, hardware limits, and air-gapped network policies.
+          All settings persist across server reboots.
         </p>
       </div>
 
@@ -84,12 +142,12 @@ export function SettingsPage() {
               <label>API Base URL</label>
               <input
                 type="text"
-                value={apiUrl}
-                onChange={(e) => setApiUrl(e.target.value)}
+                value={settings.api_base_url || 'http://127.0.0.1:8080'}
+                onChange={(e) => handleChange('api_base_url', e.target.value)}
                 placeholder="http://127.0.0.1:8080"
               />
               <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
-                Configured via <code>VITE_API_BASE_URL</code> in <code>.env</code>.
+                Configured via <code>VITE_API_BASE_URL</code> or active server bind.
               </span>
             </div>
 
@@ -142,50 +200,78 @@ export function SettingsPage() {
               <Sliders size={18} style={{ color: 'var(--color-mint-green)' }} />
               <span>Default Inference Parameters</span>
             </div>
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              onClick={handleResetDefaults}
+              title="Reset to factory defaults"
+            >
+              <RotateCcw size={14} />
+              <span>Reset</span>
+            </button>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div className="form-group">
               <label>Default STT Language</label>
-              <select value={defaultLang} onChange={(e) => setDefaultLang(e.target.value)}>
+              <select
+                value={settings.default_stt_language}
+                onChange={(e) => handleChange('default_stt_language', e.target.value)}
+              >
                 <option value="auto">Auto-Detect</option>
                 <option value="en">English (en)</option>
                 <option value="es">Spanish (es)</option>
                 <option value="hi">Hindi (hi)</option>
                 <option value="zh">Chinese (zh)</option>
+                <option value="fr">French (fr)</option>
+                <option value="de">German (de)</option>
+                <option value="ja">Japanese (ja)</option>
               </select>
             </div>
 
             <div className="form-group">
               <label>Voice Activity Filter (VAD)</label>
               <select
-                value={String(defaultVad)}
-                onChange={(e) => setDefaultVad(e.target.value === 'true')}
+                value={String(settings.default_vad_filter)}
+                onChange={(e) => handleChange('default_vad_filter', e.target.value === 'true')}
               >
-                <option value="true">Enabled by default (Faster, cuts silent passages)</option>
-                <option value="false">Disabled by default</option>
+                <option value="true">Enabled by default (Faster, cuts silent dead-air)</option>
+                <option value="false">Disabled by default (Process full audio uninterrupted)</option>
               </select>
             </div>
 
             <div className="form-group">
-              <label>Default TTS Speaking Rate ({defaultRate} WPM)</label>
+              <label>Default TTS Speaking Rate ({settings.default_tts_rate} WPM)</label>
               <input
                 type="range"
                 min="100"
                 max="250"
-                value={defaultRate}
-                onChange={(e) => setDefaultRate(Number(e.target.value))}
+                step="5"
+                value={settings.default_tts_rate}
+                onChange={(e) => handleChange('default_tts_rate', Number(e.target.value))}
               />
+            </div>
+
+            <div className="form-group">
+              <label>Automatic Webhook Event Dispatch</label>
+              <select
+                value={String(settings.auto_webhook_dispatch)}
+                onChange={(e) => handleChange('auto_webhook_dispatch', e.target.value === 'true')}
+              >
+                <option value="true">Enabled (Dispatch events on STT/TTS completion)</option>
+                <option value="false">Disabled (Quiet offline mode)</option>
+              </select>
             </div>
 
             <button
               type="button"
               className="btn btn-primary"
-              onClick={savePreferences}
+              onClick={handleSaveSettings}
+              disabled={saving}
               style={{ marginTop: 6 }}
             >
-              <Check size={16} />
-              <span>Save Studio Preferences</span>
+              <Save size={16} />
+              <span>{saving ? 'Saving Preferences...' : 'Save Studio Preferences'}</span>
             </button>
           </div>
         </div>
@@ -196,30 +282,30 @@ export function SettingsPage() {
         <div className="studio-card-header">
           <div className="studio-card-title">
             <ShieldCheck size={18} style={{ color: 'var(--color-mint-green)' }} />
-            <span>Offline Security & Privacy Audit</span>
+            <span>Air-Gapped Security & Privacy Guarantees</span>
           </div>
-          <span className="badge badge-mint">Air-Gapped Speech Pipeline</span>
+          <span className="badge badge-mint">100% Offline Certified</span>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16 }}>
           <div style={{ padding: 14, backgroundColor: 'var(--color-forest-black)', borderRadius: 10, border: '1px solid var(--color-moss-border)' }}>
-            <h4 style={{ fontSize: 13, color: 'var(--color-mint-green)', marginBottom: 6 }}>No Cloud Fallbacks</h4>
+            <h4 style={{ fontSize: 13, color: 'var(--color-mint-green)', marginBottom: 6 }}>Zero Cloud Transmission</h4>
             <p style={{ fontSize: 12, margin: 0 }}>
-              All audio inference runs locally via CTranslate2 and local synthesis. No data is ever transmitted to external cloud servers, third-party speech APIs, or remote services.
+              All audio inference executes in local memory using CTranslate2 and native synthesis. No audio, transcript, or credentials ever leave your host.
             </p>
           </div>
 
           <div style={{ padding: 14, backgroundColor: 'var(--color-forest-black)', borderRadius: 10, border: '1px solid var(--color-moss-border)' }}>
             <h4 style={{ fontSize: 13, color: 'var(--color-mint-green)', marginBottom: 6 }}>SSRF Protected</h4>
             <p style={{ fontSize: 12, margin: 0 }}>
-              External URL audio fetching is blocked on the backend via <code>/transcribe/url</code> (HTTP 403 Forbidden) to ensure total network isolation.
+              Arbitrary external audio fetching is blocked at the backend root via <code>/transcribe/url</code> (HTTP 403 Forbidden).
             </p>
           </div>
 
           <div style={{ padding: 14, backgroundColor: 'var(--color-forest-black)', borderRadius: 10, border: '1px solid var(--color-moss-border)' }}>
-            <h4 style={{ fontSize: 13, color: 'var(--color-mint-green)', marginBottom: 6 }}>Zero Telemetry</h4>
+            <h4 style={{ fontSize: 13, color: 'var(--color-mint-green)', marginBottom: 6 }}>Zero Telemetry / Trackers</h4>
             <p style={{ fontSize: 12, margin: 0 }}>
-              No analytics scripts, tracking beacons, or telemetry cookies are embedded in the frontend application.
+              No analytics scripts, tracking beacons, or third-party cookies are present in the frontend bundle.
             </p>
           </div>
         </div>

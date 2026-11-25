@@ -37,9 +37,9 @@
 }
 
 .tab-pill.active {
-  background: linear-gradient(135deg, rgba(101, 230, 165, 0.16) 0%, rgba(31, 58, 48, 0.7) 100%);
-  border: 1px solid var(--color-mint-green);
-  color: var(--color-mint-green);
+  background: var(--color-primary); color: #FFFFFF;
+  border: 1px solid var(--color-primary);
+  color: var(--color-primary);
   box-shadow: 0 0 14px rgba(101, 230, 165, 0.2), 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
@@ -51,7 +51,7 @@
 }
 
 .stat-card {
-  background: linear-gradient(180deg, #13241F 0%, #0F1C18 100%);
+  background: var(--color-card); box-shadow: var(--shadow-card);
   border: 1px solid var(--color-moss-border);
   border-radius: var(--radius-md);
   padding: 16px 20px;
@@ -88,7 +88,7 @@
 
 /* Topology / Network Badge Banner */
 .network-bar {
-  background: rgba(19, 36, 31, 0.6);
+  background: #FAF9F5;
   border: 1px solid var(--color-moss-border);
   border-radius: var(--radius-md);
   padding: 14px 20px;
@@ -103,18 +103,18 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: #0A1411;
+  background: #FAF9F5;
   border: 1px solid var(--color-moss-border);
   padding: 5px 12px;
   border-radius: var(--radius-sm);
   font-family: var(--font-mono);
   font-size: 12px;
-  color: var(--color-mint-green);
+  color: var(--color-primary);
 }
 
 /* Platform Cards */
 .platform-card {
-  background: linear-gradient(180deg, #142621 0%, #0F1D19 100%);
+  background: var(--color-card); box-shadow: var(--shadow-card);
   border: 1px solid var(--color-moss-border);
   border-radius: var(--radius-lg);
   padding: 20px;
@@ -142,7 +142,7 @@
   border-radius: var(--radius-md);
   background: rgba(101, 230, 165, 0.12);
   border: 1px solid rgba(101, 230, 165, 0.3);
-  color: var(--color-mint-green);
+  color: var(--color-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -170,7 +170,7 @@
 }
 
 .form-input, .form-select, .form-textarea {
-  background: #0A1411;
+  background: #FAF9F5;
   border: 1px solid var(--color-moss-border);
   border-radius: var(--radius-sm);
   padding: 9px 13px;
@@ -181,14 +181,14 @@
 }
 
 .form-input:focus, .form-select:focus, .form-textarea:focus {
-  border-color: var(--color-mint-green);
+  border-color: var(--color-primary);
   box-shadow: 0 0 10px rgba(101, 230, 165, 0.2);
 }
 
 /* Buttons */
 .btn-primary {
   background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: #03140C;
+  color: var(--color-white);
   font-weight: 700;
   font-size: 13px;
   border: none;
@@ -223,7 +223,7 @@
 
 .btn-secondary:hover {
   background: rgba(65, 107, 88, 0.25);
-  border-color: var(--color-mint-green);
+  border-color: var(--color-primary);
 }
 
 .btn-danger {
@@ -257,7 +257,7 @@
   border-radius: 999px;
   font-size: 12px;
   font-family: var(--font-mono);
-  background: #0A1411;
+  background: #FAF9F5;
   border: 1px solid var(--color-moss-border);
   color: var(--color-text-secondary);
   cursor: pointer;
@@ -266,14 +266,14 @@
 }
 
 .event-chip:hover {
-  border-color: var(--color-mint-green);
+  border-color: var(--color-primary);
   color: var(--color-mist-white);
 }
 
 .event-chip.selected {
   background: rgba(101, 230, 165, 0.18);
-  border-color: var(--color-mint-green);
-  color: var(--color-mint-green);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
   font-weight: 600;
 }
 
@@ -334,9 +334,9 @@
 }
 
 .modal-content {
-  background: #11201B;
-  border: 1px solid var(--color-mint-green);
-  box-shadow: 0 0 30px rgba(101, 230, 165, 0.25), 0 10px 40px rgba(0, 0, 0, 0.6);
+  background: var(--color-card);
+  border: 1px solid var(--color-primary);
+  box-shadow: var(--shadow-hover);
   border-radius: var(--radius-xl);
   padding: 28px;
   max-width: 600px;
@@ -365,7 +365,7 @@
 
 /* Code Snippet Box */
 .code-block-container {
-  background: #0A1411;
+  background: #FAF9F5;
   border: 1px solid var(--color-moss-border);
   border-radius: var(--radius-md);
   overflow: hidden;
@@ -377,7 +377,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 10px 16px;
-  background: linear-gradient(180deg, #182C26 0%, #11201B 100%);
+  background: var(--color-card); box-shadow: var(--shadow-card);
   border-bottom: 1px solid var(--color-moss-border);
 }
 
@@ -458,7 +458,7 @@
   border-radius: var(--radius-md);
   background: linear-gradient(135deg, rgba(101, 230, 165, 0.25) 0%, rgba(65, 107, 88, 0.3) 100%);
   border: 1px solid rgba(101, 230, 165, 0.4);
-  color: var(--color-mint-green);
+  color: var(--color-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -487,3 +487,229 @@
   border: 1px solid var(--color-moss-border);
   color: var(--color-mist-white);
 }
+
+/* Real Connectivity Status Panel */
+.connectivity-status-panel {
+  background: var(--color-card); box-shadow: var(--shadow-card);
+  border: 1px solid var(--color-moss-border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.connectivity-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.conn-item {
+  background: #FAF9F5;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.conn-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.conn-item-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-mist-white);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.conn-item-detail {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.conn-item-time {
+  font-size: 11px;
+  color: var(--color-primary);
+  font-family: var(--font-mono);
+}
+
+/* Diagnostics Live Results Banner */
+.diagnostics-banner {
+  background: linear-gradient(135deg, rgba(19, 36, 31, 0.95) 0%, rgba(10, 20, 17, 0.95) 100%);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 0 24px rgba(101, 230, 165, 0.15);
+}
+
+.diag-checks-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.diag-check-card {
+  background: rgba(8, 16, 13, 0.85);
+  border: 1px solid var(--color-moss-border);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.diag-check-card.pass {
+  border-left: 3px solid #10b981;
+}
+
+.diag-check-card.fail {
+  border-left: 3px solid #ef4444;
+}
+
+.diag-check-card.warning {
+  border-left: 3px solid #eab308;
+}
+
+.diag-check-card.skipped {
+  border-left: 3px solid #64748b;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* CallZenza Dedicated Hub Styles */
+.callzenza-hero-card {
+  background: linear-gradient(135deg, rgba(20, 184, 166, 0.12) 0%, rgba(19, 36, 31, 0.95) 100%);
+  border: 1px solid rgba(20, 184, 166, 0.4);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+}
+
+.callzenza-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.callzenza-status-pill.connected {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid #10b981;
+  color: #10b981;
+}
+
+.callzenza-status-pill.inactive {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid #f59e0b;
+  color: #f59e0b;
+}
+
+.cz-endpoint-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: #FAF9F5;
+  border: 1px solid var(--color-moss-border);
+  border-radius: var(--radius-sm);
+  gap: 12px;
+}
+
+.cz-endpoint-url {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-primary);
+  word-break: break-all;
+}
+
+/* Grouped Event Selector in Modal */
+.event-category-box {
+  background: rgba(10, 20, 17, 0.6);
+  border: 1px solid var(--color-moss-border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
+.event-category-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-mist-white);
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(49, 86, 71, 0.3);
+}
+
+.event-category-items {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 8px;
+}
+
+.event-checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 4px;
+  background: rgba(19, 36, 31, 0.4);
+  transition: background var(--transition-fast);
+}
+
+.event-checkbox-label:hover {
+  background: rgba(101, 230, 165, 0.1);
+}
+
+.headers-inspect-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  font-family: var(--font-mono);
+}
+
+.headers-inspect-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid rgba(49, 86, 71, 0.2);
+}
+
+.headers-inspect-table td.header-key {
+  color: var(--color-primary);
+  font-weight: 600;
+  width: 35%;
+}
+
+.headers-inspect-table td.header-val {
+  color: var(--color-mist-white);
+  word-break: break-all;
+}
+

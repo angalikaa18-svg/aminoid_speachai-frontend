@@ -13,12 +13,17 @@ import {
   HardDrive,
 } from 'lucide-react';
 import healthApi from '../api/healthApi';
+import systemApi from '../api/systemApi';
 
 export function AboutPage() {
   const [health, setHealth] = useState(null);
+  const [metrics, setMetrics] = useState(null);
+  const [stats, setStats] = useState(null);
 
   useEffect(() => {
     healthApi.getHealth().then(setHealth).catch(() => {});
+    systemApi.getMetrics().then(setMetrics).catch(() => {});
+    systemApi.getStats().then(setStats).catch(() => {});
   }, []);
 
   return (
@@ -74,6 +79,20 @@ export function AboutPage() {
             <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>HARDWARE DEVICE</div>
             <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-mist-white)', marginTop: 4 }}>
               {health?.hardware || 'Local CPU (int8)'}
+            </div>
+          </div>
+
+          <div style={{ padding: 14, backgroundColor: 'var(--color-forest-black)', borderRadius: 10, border: '1px solid var(--color-moss-border)' }}>
+            <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>CPU & RAM LOAD</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-mint-green)', marginTop: 4 }}>
+              {metrics ? `CPU: ${metrics.cpu.percent}% • RAM: ${metrics.memory.percent}%` : 'Reading Telemetry...'}
+            </div>
+          </div>
+
+          <div style={{ padding: 14, backgroundColor: 'var(--color-forest-black)', borderRadius: 10, border: '1px solid var(--color-moss-border)' }}>
+            <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>DATABASE TASKS</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-mist-white)', marginTop: 4 }}>
+              {stats ? `${stats.total_audio_tasks} Jobs (${stats.stt_tasks} STT / ${stats.tts_tasks} TTS)` : 'Connecting...'}
             </div>
           </div>
         </div>
